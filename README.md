@@ -17,7 +17,7 @@ Translate your **positive prompt** inside Forge NEO / A1111 WebUI with one key p
 - Optional **Auto Translate** mode: on Generate it temporarily inserts the translated prompt, starts generation, then restores your original text
 - Translation runs only for **positive prompt** (negative prompt is untouched)
 - Safe fallback on translation errors (generation should not break)
-- In-memory translation cache on backend
+- Translation cache on both frontend and backend — repeated generations with the same prompt skip the translation API entirely
 
 ## Supported Languages
 
@@ -77,10 +77,13 @@ Typical flow:
 
 In Auto Translate mode, detected source language is remembered during the session. Repeated generation with the same prompt/source/target uses the client cache instead of calling the translation service again.
 
+## How Auto Translate Works
+
+When Auto Translate is enabled, pressing Generate triggers an instant translation. The translated prompt is sent for generation, and your original text is restored shortly after. Repeated generations with the same prompt use the cache — no extra API calls.
+
 ## Limitations
 
 - This version does not yet protect advanced prompt tokens such as LoRA tags / weight groups with placeholders.
-- Auto Translate waits for the translation request before forwarding the Generate click.
 
 ## License
 
