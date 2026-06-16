@@ -438,6 +438,43 @@
 		return TABS[0];
 	}
 
+	async function runGenerationWithTemporaryTranslation(tab) {
+		const button = findFirst(tab.generateSelectors);
+		if (!button) {
+			return false;
+		}
+
+		const promptArea = findFirst(tab.promptSelectors);
+		if (!promptArea) {
+			return false;
+		}
+
+		const originalPrompt = promptArea.value || "";
+
+		await translateTabPrompt(tab, {
+			silent: false,
+			suppressInputEvent: true,
+			useRememberedSource: true,
+		});
+
+		const translatedPrompt = promptArea.value || "";
+
+		button.dataset.ptBypass = "1";
+		button.click();
+
+		if (translatedPrompt !== originalPrompt) {
+			window.setTimeout(() => {
+				if ((promptArea.value || "") === translatedPrompt) {
+					applyPromptValue(promptArea, originalPrompt, {
+						suppressInputEvent: true,
+					});
+				}
+			}, PROMPT_RESTORE_DELAY_MS);
+		}
+
+		return true;
+	}
+
 	function hookPromptInput(tab) {
 		const promptArea = findFirst(tab.promptSelectors);
 		if (!promptArea || promptArea.dataset.ptInputHooked === "1") {
@@ -447,7 +484,7 @@
 		promptArea.dataset.ptInputHooked = "1";
 		promptArea.addEventListener(
 			"keydown",
-			async (event) => {
+			(event) => {
 				if (event.key !== "Enter" || !event.shiftKey) {
 					return;
 				}
@@ -460,30 +497,7 @@
 
 				event.preventDefault();
 				event.stopImmediatePropagation();
-
-				const originalPrompt = promptArea.value || "";
-
-				await translateTabPrompt(tab, {
-					silent: false,
-					suppressInputEvent: true,
-					useRememberedSource: true,
-				});
-
-				const translatedPrompt = promptArea.value || "";
-				const button = findFirst(tab.generateSelectors);
-				if (button) {
-					button.click();
-				}
-
-				if (translatedPrompt !== originalPrompt) {
-					window.setTimeout(() => {
-						if ((promptArea.value || "") === translatedPrompt) {
-							applyPromptValue(promptArea, originalPrompt, {
-								suppressInputEvent: true,
-							});
-						}
-					}, PROMPT_RESTORE_DELAY_MS);
-				}
+				runGenerationWithTemporaryTranslation(tab);
 			},
 			true,
 		);
@@ -892,15 +906,21 @@
 		button.addEventListener(
 			"click",
 			async (event) => {
+				if (button.dataset.ptBypass === "1") {
+					button.dataset.ptBypass = "0";
+					return;
+				}
+
 				if (!getStoredEnabled(tab)) {
 					return;
 				}
 
+				event.preventDefault();
 				event.stopImmediatePropagation();
 
 				const promptArea = findFirst(tab.promptSelectors);
 				if (!promptArea) {
-					event.stopPropagation();
+					button.dataset.ptBypass = "1";
 					button.click();
 					return;
 				}
@@ -915,6 +935,7 @@
 
 				const translatedPrompt = promptArea.value || "";
 
+				button.dataset.ptBypass = "1";
 				button.click();
 
 				if (translatedPrompt !== originalPrompt) {
