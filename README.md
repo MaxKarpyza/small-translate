@@ -77,6 +77,10 @@ Typical flow:
 
 In Auto Translate mode, detected source language is remembered during the session. Repeated generation with the same prompt/source/target uses the client cache instead of calling the translation service again.
 
+## How Auto Translate Works
+
+When Auto Translate is enabled, pressing Generate triggers an instant translation. The translated prompt is sent for generation, and your original text is restored shortly after.
+
 ## Limitations
 
 - This version does not yet protect advanced prompt tokens such as LoRA tags / weight groups with placeholders.
